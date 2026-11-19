@@ -1,0 +1,107 @@
+:host{display:block}.app-shell{padding:16px;max-width:1100px;margin:auto}h1{margin-top:0}nav{display:flex;gap:6px;margin:16px 0;border-bottom:1px solid #ccc;padding-bottom:8px}nav button.active{font-weight:700;border-bottom:3px solid currentColor}.notice,.blocked,.ok,.error,.coming{padding:10px;margin:10px 0;border:1px solid #bbb;border-radius:4px}.blocked,.error{font-weight:600}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}label{display:flex;flex-direction:column;gap:5px;margin:10px 0}input,select,textarea,button{font:inherit;padding:7px}button{cursor:pointer}.buttons,.reason-buttons{display:flex;gap:8px;flex-wrap:wrap}.table-wrap{overflow:auto;margin-top:14px}table{border-collapse:collapse;width:100%;font-size:.92rem}th,td{border:1px solid #ccc;padding:6px;text-align:left;vertical-align:top}tr.bad{font-weight:600}small{opacity:.8}.file-button{display:inline-block;padding:.55rem .8rem;border:1px solid currentColor;border-radius:4px;cursor:pointer}.file-button input{display:none}.config-topbar{position:sticky;top:0;z-index:2;padding:4px 0 10px;background:inherit}.back-button{font-weight:600}.mapping-box{margin:18px 0;padding:12px;border:1px solid #bbb;border-radius:4px}.mapping-box legend{font-weight:600;padding:0 6px}@media(max-width:700px){.grid{grid-template-columns:1fr}}
+
+/* Control report: compact panel preview, full data only in exports. */
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0}
+.stat{border:1px solid #ccc;border-radius:5px;padding:9px 5px;display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0;gap:3px}
+.stat strong{font-size:1.1rem}.stat span{font-size:.75rem;overflow-wrap:anywhere}
+.reason-buttons button.active{font-weight:700;border:2px solid currentColor}
+.export-area{border:1px solid #bbb;border-radius:5px;padding:12px;margin:14px 0}
+.export-area p{font-size:.85rem;margin:8px 0}
+.preview-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:16px 0 8px}
+.item-list{border-top:1px solid #ddd}
+.item-row{border-bottom:1px solid #ddd;padding:10px 2px;min-width:0}
+.item-row.bad{border-left:3px solid #ad3333;padding-left:8px}
+.item-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.item-status{display:inline-block;border:1px solid currentColor;border-radius:3px;padding:2px 5px;font-size:.75rem;font-weight:700;white-space:nowrap}
+.item-error{color:#b02020}
+.item-barcode{font-size:.85rem;overflow-wrap:anywhere}
+.item-title{margin:5px 0;overflow-wrap:anywhere}
+.item-details{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:.8rem;opacity:.85;overflow-wrap:anywhere}
+.item-details span{min-width:0}
+.pagination{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0}
+.pagination button{flex:0 0 auto}.pagination span{text-align:center}
+@media(max-width:400px){.app-shell{padding:12px}.stat strong{font-size:.95rem}.stats{gap:4px}.pagination button{padding:5px}}
+
+.print-orientation{max-width:220px;margin:8px 0 12px;font-size:.9rem}
+.print-orientation select{width:100%}
+
+.workflow-panel{margin:18px 0;padding:14px;border:1px solid #aaa;border-radius:6px}
+.workflow-panel legend{font-weight:600;padding:0 5px}
+.workflow-panel input[type=text],.workflow-panel input:not([type]){max-width:480px;width:100%;box-sizing:border-box}
+.workflow-panel button:disabled{opacity:.55;cursor:not-allowed}
+.config-topbar+.grid{margin-top:16px}
+label:has(input[type=checkbox]){display:flex;flex-direction:row;align-items:center;gap:8px}
+label input[type=checkbox]{width:18px;height:18px;flex-shrink:0}
+
+.phase-overview{margin:10px 0;padding:10px;border:1px solid #bbb;border-radius:5px}.phase-overview p{margin:5px 0;font-size:.9rem}
+
+
+.workflow-panel{transition:background-color .2s ease,border-color .2s ease}
+.workflow-panel-success{background:#eef8ee;border:1px solid #6aa56a}
+.workflow-panel-error{background:#fdeeee;border:1px solid #c96b6b}
+.workflow-panel-pending{background:#fff}
+
+
+/* 1.0.0: prevent native selects and long names from expanding the Alma sidebar.
+   Apply the same responsive rules to the main workflow and configuration screen. */
+:host, .app-shell {min-width:0;max-width:100%;box-sizing:border-box}
+.app-shell *, .app-shell *::before, .app-shell *::after {box-sizing:border-box}
+.app-shell .grid {grid-template-columns:repeat(2,minmax(0,1fr));min-width:0}
+.app-shell .grid > *, .app-shell label, .app-shell fieldset, .app-shell .mapping-box,
+.app-shell .workflow-panel, .app-shell .export-area {min-width:0;max-width:100%}
+.app-shell label > select, .app-shell label > input:not([type=checkbox]),
+.app-shell label > textarea, .app-shell .grid select, .app-shell .grid input,
+.app-shell .grid textarea, .app-shell .workflow-panel select,
+.app-shell .mapping-box select {display:block;width:100%;max-width:100%;min-width:0}
+.app-shell .grid > div > select {margin:8px 0}
+.app-shell .buttons > button, .app-shell .workflow-panel > button {max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.app-shell nav {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));min-width:0;gap:5px}
+.app-shell nav button {min-width:0;max-width:100%;padding:7px 3px;white-space:normal;overflow-wrap:anywhere;line-height:1.25}
+@media(max-width:700px) {
+  .app-shell .grid {grid-template-columns:minmax(0,1fr)}
+}
+
+
+/* RC2 – navigation: 4 equal tabs on wide layouts; two balanced rows in
+   narrow Alma sidebar. Never rely on intrinsic label widths. */
+.app-shell nav.workflow-tabs {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  width:100%;
+  margin:16px 0;
+  padding:0 0 10px;
+  min-width:0;
+}
+.app-shell nav.workflow-tabs button {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  min-width:0;
+  width:100%;
+  min-height:60px;
+  padding:9px 6px;
+  line-height:1.2;
+  text-align:center;
+  border:1px solid #a7a7a7;
+  border-radius:5px;
+  background:transparent;
+  color:inherit;
+  overflow-wrap:normal;
+  word-break:normal;
+}
+.app-shell nav.workflow-tabs button.active {
+  font-weight:700;
+  border-color:currentColor;
+  border-bottom:3px solid currentColor;
+}
+.app-shell nav.workflow-tabs button:disabled {opacity:.55;cursor:not-allowed}
+.app-shell nav.workflow-tabs .tab-number {font-size:.79em;line-height:1;opacity:.75}
+.app-shell nav.workflow-tabs .tab-label {font-size:.88em;hyphens:none;max-width:100%}
+@media (max-width:560px) {
+  .app-shell nav.workflow-tabs {grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .app-shell nav.workflow-tabs button {min-height:48px;padding:7px 8px;gap:1px}
+  .app-shell nav.workflow-tabs .tab-label {font-size:.92em}
+}

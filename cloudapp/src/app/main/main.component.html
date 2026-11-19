@@ -1,0 +1,250 @@
+<div class="app-shell" *ngIf="configMode; else app">
+  <div class="config-topbar"><button type="button" class="back-button" (click)="goMain()">← {{'back'|translate}}</button></div>
+  <h1>{{'configTitle'|translate}}</h1>
+  <label>{{'woWeeding'|translate}}<input [(ngModel)]="woWeeding"></label>
+  <label>{{'woDone'|translate}}<input [(ngModel)]="woDone"></label>
+  <label>{{'allowedReasons'|translate}}<textarea rows="6" [ngModel]="reasonsText" (ngModelChange)="setReasonsText($event)"></textarea></label>
+  <fieldset class="mapping-box">
+    <legend>Volitelné akviziční údaje úbytkového seznamu</legend>
+    <label><input type="checkbox" [(ngModel)]="includeAcquisitionMethod"> Načítat způsob nabytí z objednávkových řádků (další Alma API volání)</label>
+    <p>Ve výchozím stavu vypnuto. Při vypnutí se nezjišťují PO Line a nevznikají dodatečné požadavky na akviziční API. Základní údaje o jednotkách se načítají vždy. Retrokatalogizace se nadále rozpoznává z údajů jednotky.</p>
+  </fieldset>
+
+  <fieldset class="mapping-box">
+    <legend>{{'withdrawalLocations'|translate}}</legend>
+    <p>{{'withdrawalHelp'|translate}}</p>
+    <button type="button" *ngIf="instCode==='420CARDS_CVUT'" (click)="prefillCvut()">{{'prefillCvut'|translate}}</button>
+    <div class="grid">
+      <label>{{'library'|translate}}
+        <select [title]="selectedLibraryLabel(configLibrary)" [(ngModel)]="configLibrary" (change)="onConfigLibrary()">
+          <option value="">— {{'selectLibrary'|translate}} —</option>
+          <option *ngFor="let x of libraries" [value]="x.value">{{x.desc}} ({{x.value}})</option>
+        </select>
+      </label>
+      <label>{{'withdrawalTarget'|translate}}
+        <select [title]="selectedLocationLabel(configLocation,configLocations)" [(ngModel)]="configLocation" [disabled]="!configLibrary||configLocationsLoading">
+          <option value="">— {{'selectWithdrawalTarget'|translate}} —</option>
+          <option *ngFor="let x of configLocations" [value]="x.value">{{x.desc}} ({{x.value}})</option>
+        </select>
+      </label>
+      <label>{{'sequenceName'|translate}}<input [(ngModel)]="configSequence" placeholder="Úbytkové číslo DKD"></label>
+      <label>Změna WO – interní ID cílového oddělení (volitelné)<input [(ngModel)]="configWoDepartmentId" placeholder="interní ID oddělení z ověřené konfigurace jobu"></label>
+      <div><button type="button" (click)="loadWorkOrderDepartments()" [disabled]="departmentsLoading">Načíst oddělení z Almy</button>
+        <select *ngIf="departmentChoices.length" [(ngModel)]="configWoDepartmentId">
+          <option value="">— vyberte oddělení / ruční ID —</option>
+          <option *ngFor="let dep of departmentChoices" [value]="dep.id">{{dep.name}} ({{dep.code}}) · {{dep.id}}</option>
+        </select><small>API nemusí vrátit interní ID. V tom případě zůstává ruční zadání podle ověřeného XML jobu.</small></div>
+    </div>
+    <button type="button" (click)="addWithdrawalMapping()" [disabled]="!configLibrary">{{'addMapping'|translate}}</button>
+    <div class="table-wrap" *ngIf="mappingEntries.length">
+      <table><thead><tr><th>{{'library'|translate}}</th><th>{{'withdrawalTarget'|translate}}</th><th>{{'sequenceName'|translate}}</th><th>Cílové oddělení</th><th></th></tr></thead>
+      <tbody><tr *ngFor="let x of mappingEntries">
+        <td>{{x.libraryDesc}} ({{x.libraryCode}})</td><td>{{x.locationCode||'—'}}</td>
+        <td>{{x.sequenceName||'—'}}</td><td>{{x.woDepartmentId||'—'}}</td>
+        <td><button type="button" (click)="removeWithdrawalMapping(x.libraryCode)">{{'remove'|translate}}</button></td>
+      </tr></tbody></table>
+    </div>
+    <p *ngIf="!mappingEntries.length" class="notice">{{'noMappings'|translate}}</p>
+    <small>{{'unconfiguredHelp'|translate}}</small>
+  </fieldset>
+  <fieldset>
+    <legend>{{'writeSafety'|translate}}</legend>
+    <p>{{'currentEnvironment'|translate}}: <strong>{{environment}}</strong> · {{'institution'|translate}}: <strong>{{instCode || '—'}}</strong></p>
+    <p class="error" *ngIf="environmentError">{{environmentError}}</p>
+    <p class="error" *ngIf="importWarning">{{importWarning}}</p>
+    <label *ngIf="importWarning"><input type="checkbox" [(ngModel)]="importReviewed"> {{'importReviewed'|translate}}</label>
+    <label><input type="checkbox" [(ngModel)]="allowWrites" [disabled]="environment==='unverified' || !!environmentError"> {{'enableWrites'|translate}}</label>
+    <small>{{'writeSafetyHelp'|translate}}</small>
+  </fieldset>
+  <div class="buttons"><button (click)="saveConfiguration()">{{'save'|translate}}</button><button type="button" (click)="exportConfiguration()">{{'exportConfig'|translate}}</button><label class="file-button">{{'importConfig'|translate}}<input type="file" accept="application/json,.json" (change)="importConfiguration($event)"></label></div>
+  <small>{{'importHelp'|translate}}</small>
+  <p class="ok" *ngIf="message">{{message}}</p><p class="error" *ngIf="error">{{error}}</p>
+</div>
+<ng-template #app><div class="app-shell">
+  <h1>{{'appTitle'|translate}}</h1><div class="notice" *ngIf="!canWrite">{{'writeDisabled'|translate}} <span *ngIf="environmentError">{{environmentError}}</span></div>
+  <nav class="workflow-tabs" aria-label="Workflow">
+    <button type="button" [class.active]="tab==='weeding'" [attr.aria-current]="tab==='weeding' ? 'page' : null" (click)="tab='weeding'" [disabled]="workflowBusy||loading"><span class="tab-number">1.</span><span class="tab-label">{{'tabWeeding'|translate}}</span></button>
+    <button type="button" [class.active]="tab==='done'" [attr.aria-current]="tab==='done' ? 'page' : null" (click)="tab='done'" [disabled]="workflowBusy||loading"><span class="tab-number">2.</span><span class="tab-label">{{'tabDone'|translate}}</span></button>
+    <button type="button" [class.active]="tab==='move'" [attr.aria-current]="tab==='move' ? 'page' : null" (click)="tab='move'" [disabled]="workflowBusy||loading"><span class="tab-number">3.</span><span class="tab-label">{{'tabMove'|translate}}</span></button>
+    <button type="button" [class.active]="tab==='history'" [attr.aria-current]="tab==='history' ? 'page' : null" (click)="tab='history'" [disabled]="workflowBusy||loading"><span class="tab-number">4.</span><span class="tab-label">{{'tabHistory'|translate}}</span></button>
+  </nav>
+  <section *ngIf="tab==='weeding'">
+    <div class="workflow-panel">
+    <p>{{'intro'|translate}}</p>
+    <div class="grid"><label>{{'library'|translate}}<select [title]="selectedLibraryLabel(library)" [(ngModel)]="library" (change)="onLibrary()" [disabled]="loading"><option value="">— {{'selectLibrary'|translate}} —</option><option *ngFor="let x of libraries" [value]="x.value">{{x.desc}} ({{x.value}})</option></select></label>
+    <label>{{'location'|translate}}<select [title]="selectedLocationLabel(location,locations)" [(ngModel)]="location" (change)="onLocationChange()" [disabled]="loading"><option value="">— {{'selectLocation'|translate}} —</option><option *ngFor="let x of locations" [value]="x.value">{{x.desc}} ({{x.value}})</option></select></label></div>
+    <p class="notice">Načtení automaticky vytvoří a po převzetí jednotek odstraní pomocný logický set Almy. Odpisové sety budou pevné (ITEMIZED).</p>
+    <button (click)="load()" [disabled]="loading||!location">{{loading?('loading'|translate):('load'|translate)}}</button>
+    <p class="error" *ngIf="error">{{error}}</p><p *ngIf="message">{{message}}</p>
+    </div>
+    <div *ngIf="loaded && items.length">
+      <div class="stats" aria-live="polite">
+        <div class="stat"><strong>{{items.length}}</strong><span>{{'totalItems'|translate}}</span></div>
+        <div class="stat"><strong>OK {{okCount}}</strong><span>{{'okItems'|translate}}</span></div>
+        <div class="stat"><strong>ERR {{invalidCount}}</strong><span>{{'errItems'|translate}}</span></div>
+      </div>
+      <div class="blocked" *ngIf="invalidCount">{{'blocked'|translate}} <strong>{{invalidCount}}</strong></div>
+      <div class="blocked" *ngIf="invalidReasonItems.length" role="alert">
+        <strong>STOP – neplatný důvod odpisu ({{invalidReasonItems.length}} jednotek).</strong>
+        Žádné úbytkování nelze spustit. Opravte Statistickou poznámku 2 přímo u dotčených jednotek v Almě a potom znovu klikněte na „Načíst“.
+        <p><strong>Povolené důvody:</strong> {{allowedReasons.join(' | ')}}</p>
+        <p *ngFor="let r of invalidReasonSummary"><strong>Chybná hodnota:</strong> {{r.reason}} ({{r.count}}×)</p>
+        <div *ngFor="let x of invalidReasonItems">
+          <strong>{{x.inventoryNumber||'bez přírůstkového čísla'}}</strong>
+          – barcode {{x.barcode||'—'}}, item PID {{x.itemPid}},
+          důvod: {{x.reason||'(prázdný)'}}
+        </div>
+      </div>
+      <div class="blocked" *ngIf="alreadyWeededItems.length" role="alert"><strong>STOP – {{alreadyWeededItems.length}} jednotek již má úbytkové číslo nebo datum odpisu.</strong><p>Úbytkování nelze spustit. Prověřte tyto jednotky v Almě; existující odpisové údaje se automaticky nepřepisují.</p><div *ngFor="let x of alreadyWeededItems"><strong>{{x.inventoryNumber||x.barcode||x.itemPid}}</strong> – číslo: {{x.weedingNumber||'nevyplněno'}}, datum: {{x.weedingDate||'nevyplněno'}}</div></div>
+      <div class="ok" *ngIf="!invalidCount">{{'ready'|translate}}</div>
+      <h3>{{'usedReasons'|translate}}</h3>
+      <div class="reason-buttons">
+        <button type="button" [class.active]="!selectedReason" (click)="chooseReason('')">{{'allReasons'|translate}} ({{items.length}})</button>
+        <button type="button" *ngFor="let r of usedReasons" [class.active]="selectedReason===r.reason" [disabled]="invalidCount>0" (click)="chooseReason(r.reason)">{{r.reason}} ({{r.count}})</button>
+      </div>
+      <div class="export-area">
+        <strong>{{'controlReport'|translate}}</strong>
+        <p>{{'fullReportHint'|translate}}</p>
+        <label class="print-orientation">{{'pageOrientation'|translate}}
+          <select [(ngModel)]="printOrientation" [attr.aria-label]="'pageOrientation' | translate">
+            <option value="portrait">{{'portrait'|translate}}</option>
+            <option value="landscape">{{'landscape'|translate}}</option>
+          </select>
+        </label>
+        <div class="buttons">
+          <button type="button" (click)="exportControlCsv()">{{'exportCsv'|translate}} ({{reportItems.length}})</button>
+          <button type="button" (click)="printControlList()">{{'printList'|translate}} ({{reportItems.length}})</button>
+        </div>
+      </div>
+      <div class="preview-heading"><strong>{{'itemsPreview'|translate}}</strong><small>{{shownFrom}}–{{shownTo}} / {{reportItems.length}}</small></div>
+      <div class="item-list">
+        <div class="item-row" *ngFor="let x of visibleItems" [class.bad]="!x.valid">
+          <div class="item-top"><span class="item-status" [class.item-error]="!x.valid">{{x.valid?'OK':'ERR'}}</span><strong>{{x.inventoryNumber||'—'}}</strong><span class="item-barcode">{{x.barcode||'—'}}</span></div>
+          <div class="item-title">{{x.title||'—'}}</div>
+          <div class="item-details"><span>MMS ID: {{x.mmsId}}</span><span>{{'reason'|translate}}: {{x.reason||'—'}}</span></div>
+        </div>
+      </div>
+      <div class="pagination" *ngIf="totalPages>1">
+        <button type="button" (click)="changePage(-1)" [disabled]="page===1">{{'previous'|translate}}</button>
+        <span>{{'page'|translate}} {{page}} / {{totalPages}}</span>
+        <button type="button" (click)="changePage(1)" [disabled]="page===totalPages">{{'next'|translate}}</button>
+      </div>
+    </div><p *ngIf="!loading&&loaded&&!items.length">{{'noItems'|translate}}</p>
+    <fieldset class="workflow-panel">
+      <legend>{{'startWeeding'|translate}}</legend>
+      <p>{{'weedingSafety'|translate}}</p>
+      <label>{{'weedingDate'|translate}} <input type="date" [(ngModel)]="operationDate" [disabled]="workflowBusy"></label>
+      <p>{{'selectedSequence'|translate}}: <strong>{{chosenConfig?.sequenceName||'—'}}</strong></p>
+      <p>Odpis vybraného důvodu: <strong>{{reportItems.length}} jednotek</strong>. Před zápisem se znovu ověří aktuální členství a platnost všech důvodů.</p>
+      <button type="button" (click)="beginWeeding()" [disabled]="!readyToWeed">{{'startWeeding'|translate}}</button>
+    </fieldset>
+  </section>
+
+  <section *ngIf="tab==='done'||tab==='move'" class="workflow-panel">
+    <p>{{(tab==='done'?'doneIntro':'moveIntro')|translate}}</p>
+    <div class="grid">
+      <label>{{'library'|translate}}
+        <select [title]="selectedLibraryLabel(flowLibrary)" [(ngModel)]="flowLibrary" (change)="onFlowLibrary()" [disabled]="workflowBusy">
+          <option value="">— {{'selectLibrary'|translate}} —</option><option *ngFor="let x of libraries" [value]="x.value">{{x.desc}} ({{x.value}})</option>
+        </select>
+      </label>
+      <label>{{'location'|translate}}
+        <select [title]="selectedLocationLabel(flowLocation,flowLocations)" [(ngModel)]="flowLocation" (change)="onFlowLocationChange()" [disabled]="workflowBusy">
+          <option value="">— {{'selectLocation'|translate}} —</option><option *ngFor="let x of flowLocations" [value]="x.value">{{x.desc}} ({{x.value}})</option>
+        </select>
+      </label>
+    </div>
+    <p *ngIf="tab==='done' && flowLibrary && flowLocation && chosenFlowConfig?.woDepartmentId" class="notice">{{'doneDepartmentConfigured'|translate}}: <strong>{{chosenFlowConfig?.woDepartmentId}}</strong>. {{'doneRequestsNotice'|translate}}</p>
+    <p *ngIf="tab==='done' && flowLibrary && flowLocation && !chosenFlowConfig?.woDepartmentId" class="error">{{'doneDepartmentMissing'|translate}}</p>
+    <p *ngIf="tab==='move'">{{'withdrawalTarget'|translate}}: <strong>{{chosenFlowConfig?.locationCode||'—'}}</strong></p>
+    <label>Zdrojový odpisový set pro krok 2 / 3
+      <select [(ngModel)]="workflowSourceSetId" (change)="selectWorkflowSourceSet()" [disabled]="workflowBusy">
+        <option value="">— nejprve načtěte historii setů —</option>
+        <option *ngFor="let x of workflowSetsForLocation" [value]="x.id">{{x.name}} ({{x.id}})</option>
+      </select></label>
+    <p *ngIf="workflowSourceSetName">Použije se PŮVODNÍ set {{workflowSourceSetName}}; důvod {{workflowSourceReason||'v popisu setu'}}. Členství se znovu ověří.</p>
+    <div *ngIf="workflowSourceSetName" class="phase-overview"><strong>Historie původního setu (Alma)</strong><p *ngFor="let phase of workflowPhaseSummary">{{phase}}</p></div>
+    <button (click)="loadHistory()" [disabled]="historyLoading||workflowBusy">{{historyLoading?'Načítám sety…':'Načíst dostupné odpisové sety'}}</button>
+    <p *ngIf="flowLibrary && flowLocation" class="notice">Odpovídající odpisové sety: {{workflowSetsForLocation.length}} ({{flowLibrary}} / {{flowLocation}}).</p>
+    <button type="button" *ngIf="canUseLastWeedingSet && !workflowSourceSetId" (click)="useLastWeedingSet()" [disabled]="workflowBusy||historyLoading">Použít set posledního dokončeného odpisu</button>
+    <p *ngIf="canUseLastWeedingSet && !workflowSourceSetId" class="notice">{{lastWeedingSetName}}</p>
+    <button (click)="loadWorkflowItems()" [disabled]="workflowBusy||!flowLibrary||!flowLocation||!workflowSourceSetId">{{'load'|translate}}</button>
+    <p *ngIf="flowLoaded">{{'totalItems'|translate}}: {{flowItems.length}} · {{'skippedItems'|translate}}: {{flowSkipped}}</p>
+    <div class="item-list" *ngIf="flowLoaded">
+      <div class="item-row" *ngFor="let x of flowItems.slice(0,50)" [class.bad]="!x.valid">
+        <div class="item-top"><strong>{{x.inventoryNumber||x.barcode||x.itemPid}}</strong> · {{x.weedingNumber||'—'}} · {{x.weedingDate||'—'}}</div>
+        <div class="item-title">{{x.title}}</div>
+      </div><p *ngIf="flowItems.length>50">{{'firstFifty'|translate}}</p>
+    </div>
+    <div *ngIf="flowLoaded && flowItems.length" class="workflow-action">
+      <p>Rozsah operace: <strong>{{flowItems.length}} jednotek</strong>. Před zápisem se ověří stav každé jednotky.</p>
+      <button *ngIf="tab==='done'" (click)="beginWoM18()" [disabled]="!readyToWoJob">Spustit odepsání</button>
+      <button *ngIf="tab==='move'" (click)="beginMove()" [disabled]="!readyToMove">{{'startMove'|translate}}</button>
+    </div>
+  </section>
+  <fieldset class="workflow-panel" [ngClass]="operationPanelClass" *ngIf="operation && tab!=='history'">
+    <legend>{{'jobMonitor'|translate}}</legend>
+    <p>{{operation.kind}} · {{operation.setName}} · {{operation.stage}}</p>
+    <p>{{'instanceId'|translate}}: <strong>{{operation.instanceId||'—'}}</strong></p>
+    <p class="ok" *ngIf="phaseSaveMessage">{{phaseSaveMessage}}</p>
+    <p class="error" *ngIf="phaseSaveError">{{phaseSaveError}}</p>
+    <button type="button" *ngIf="phaseSaveError" (click)="recordCurrentJobInSet()" [disabled]="workflowBusy||environment!=='sandbox'||!canWrite||!(operation.stage==='complete'||operation.stage==='failed')">Opakovat pouze uložení historie (bez opakování jobu)</button>
+    <button *ngIf="operation.kind==='wo'" type="button" (click)="exportWoResultsCsv()">Exportovat kontrolu WO do CSV</button>
+    <button *ngIf="operation.kind==='move' && operation.stage==='complete'" type="button" (click)="exportMoveResultsCsv()">Exportovat závěrečnou kontrolu přesunu do CSV</button>
+    <p *ngIf="operation.kind==='move' && operation.stage==='complete'">Závěrečná kontrola: {{operation.resultByPid ? (operation.resultByPid|keyvalue).length : 0}} / {{operation.memberIds.length}} jednotek. Ověřena cílová lokace, WO a zachování čísla i data.</p>
+    <p *ngIf="operation.kind==='wo'">Kontrola: {{operation.resultByPid ? (operation.resultByPid|keyvalue).length : 0}} z {{operation.memberIds.length}} jednotek. U chyb ověřte požadavky v Almě; automatické mazání ani opakování jobu se neprovádí.</p>
+    <button type="button" *ngIf="operation.stage==='new'||operation.stage==='set_created'" (click)="resumeSetPreparation()" [disabled]="workflowBusy">Obnovit přípravu setu (bez spuštění jobu)</button>
+    <p *ngIf="operation.stage==='members_added'" class="notice">Set je kompletní, ale job není spuštěn. Automatické opakování zápisu je blokováno; zkontrolujte pokračování v Almě.</p>
+    <button type="button" *ngIf="operation.instanceId && operation.stage!=='complete' && operation.stage!=='failed' && !jobPollingEnabled" (click)="startJobPolling()">Zapnout automatickou kontrolu (30 s)</button>
+    <button type="button" *ngIf="jobPollingEnabled" (click)="stopJobPolling()">Zastavit automatické kontroly</button>
+    <p *ngIf="jobPollingMessage">{{jobPollingMessage}}</p>
+    <button (click)="checkOperation()" [disabled]="workflowBusy||!operation.instanceId">{{'checkJob'|translate}}</button>
+    <p *ngIf="operation.error" class="error">{{operation.error}}</p>
+  </fieldset>
+  <fieldset class="workflow-panel" *ngIf="tab==='history'">
+    <legend>{{'history'|translate}}</legend>
+    <div class="grid">
+      <label>Knihovna <select [(ngModel)]="historyFilterLibrary"><option value="">Všechny knihovny</option><option *ngFor="let x of libraries" [value]="x.value">{{x.desc}} ({{x.value}})</option></select></label>
+      <label>Sbírka / lokace <input [(ngModel)]="historyFilterLocation" placeholder="např. 55130"></label>
+      <label>Datum odpisu od <input type="date" [(ngModel)]="historyFilterFrom"></label>
+      <label>Datum odpisu do <input type="date" [(ngModel)]="historyFilterTo"></label>
+      <label>Důvod nebo název <input [(ngModel)]="historyFilterText" placeholder="např. zchátralost"></label>
+    </div>
+    <p class="notice">Pro filtrování se použije datum odpisu z metadat setu. Pokud chybí, použije se náhradně datum vytvoření setu uložené v jeho názvu. Náhradní datum nemusí odpovídat skutečnému datu odpisu. Detaily jednotek se kvůli filtrování nenačítají. Po změně data klikněte na Načíst historii.</p>
+    <button (click)="loadHistory()" [disabled]="historyLoading||workflowBusy">{{'loadHistory'|translate}}</button>
+    <select [(ngModel)]="selectedHistoricalSet" (ngModelChange)="onHistoricalSetChange()" *ngIf="filteredHistoricalSets.length" [disabled]="historyLoading">
+      <option value="">— {{'historySelect'|translate}} —</option>
+      <option *ngFor="let x of filteredHistoricalSets" [value]="x.id">{{x.name}} {{historyDateLabel(x.id)}}</option>
+    </select>
+    <p *ngIf="historyLoading && flowProgress">{{flowProgress}}</p>
+    <p *ngIf="(historyFilterFrom||historyFilterTo) && !historyDateScanned" class="notice">Po zadání data klikněte na Načíst historii. Bez načteného data z metadat nebo názvu setu se set do výsledků nezahrne.</p>
+    <p>Nalezeno {{filteredHistoricalSets.length}} / {{historicalSets.length}} setů.</p>
+    <p *ngIf="selectedHistoricalSet && historyDateLabel(selectedHistoricalSet)">Použité datum pro historii: {{historyDateLabel(selectedHistoricalSet)}}</p>
+    <button (click)="inspectSet()" [disabled]="!selectedHistoricalSet||historyLoading||workflowBusy">Detail setu a metadata</button>
+    <div *ngIf="setDetail && setDetail.id===selectedHistoricalSet">
+      <p><strong>Set ID:</strong> {{setDetail.id}} · <strong>Členové:</strong> {{setDetail.number_of_members?.value||setDetail.number_of_members||'ověřují se při jobu'}}</p>
+      <p *ngFor="let phase of setPhaseSummary">{{phase}}</p>
+      <label>Popis <textarea [(ngModel)]="metadataDescription" rows="2"></textarea></label>
+      <label>Poznámka <textarea [(ngModel)]="metadataNote" rows="5"></textarea></label>
+      <button type="button" (click)="saveSetMetadata()" [disabled]="workflowBusy||!canWrite||environment!=='sandbox'">TEST: uložit metadata setu v PSB</button>
+      <small>Samostatný test PUT metadata; zachovává ostatní vrácená pole a ověřuje členství před/po. V produkci zatím zakázáno.</small>
+    </div>
+    <button (click)="loadHistoricalReport()" [disabled]="!selectedHistoricalSet||historyLoading">{{'loadHistoryList'|translate}}</button>
+    <div *ngIf="historicalItems.length && historicalReportSetId===selectedHistoricalSet">
+      <label>{{'pageOrientation'|translate}}
+        <select [(ngModel)]="printOrientation"><option value="portrait">{{'portrait'|translate}}</option><option value="landscape">{{'landscape'|translate}}</option></select>
+      </label>
+      <label>Řazení úbytkového seznamu
+        <select [(ngModel)]="withdrawalSort">
+          <option value="weeding">Podle úbytkového čísla</option>
+          <option value="inventory">Podle přírůstkového čísla</option>
+        </select>
+      </label>
+      <p>Set {{historicalReportSetId}} · {{'historyCurrentData'|translate}}: {{historicalItems.length}} · původní sbírka {{historyLibrary}} / {{historyLocation}}</p>
+      <button (click)="exportWithdrawalCsv()">{{'exportCsv'|translate}}</button>
+      <button (click)="printWithdrawalList()">{{'printList'|translate}}</button>
+    </div>
+  </fieldset>
+  <p *ngIf="flowProgress">{{flowProgress}}</p>
+  <p class="ok" *ngIf="message">{{message}}</p><p class="error" *ngIf="error">{{error}}</p>
+</div></ng-template>
