@@ -1,53 +1,53 @@
 {
-   "id": "skopeant/alma-odpisy",
-   "title": [
-      {
-         "lang": "cs",
-         "text": "Odpisy – Weeding"
-      },
-      {
-         "lang": "en",
-         "text": "Odpisy – Weeding"
-      }
-   ],
-   "subtitle": [
-      {
-         "lang": "cs",
-         "text": "Řízený odpis fyzických jednotek"
-      },
-      {
-         "lang": "en",
-         "text": "Controlled physical item weeding workflow"
-      }
-   ],
-   "author": "Antonín Skopec",
-   "license": "MIT",
-   "icon": {
-      "type": "url",
-      "value": "/assets/odpisy.png"
-   },
-   "pages": {
-      "config": "/#/config",
-      "help": "https://github.com/skopeant/odpisy#readme"
-   },
-   "contentSecurity": {
-      "sandbox": {
-         "downloads": true,
-         "popups": true,
-         "popups-to-escape-sandbox": true
-      },
-      "connectSrc": [
-         "https://api.exldevnetwork.net"
-      ]
-   },
-   "description": [
-      {
-         "lang": "cs",
-         "text": "Řízené úbytkování fyzických jednotek: číslo a datum, odepsání, přesun; historie, tisk a CSV. Job Change Physical Items Information vyžaduje roli Repository Manager, Repository Administrator nebo Physical Inventory Operator (včetně Limited s institucionálním rozsahem). K práci se sety mohou být potřebná další oprávnění. Konfigurace: General System Administrator. Minimální kombinace rolí ještě nebyla testována."
-      },
-      {
-         "lang": "en",
-         "text": "Controlled physical item weeding: number/date, work-order change and relocation; history, print and CSV. Change Physical Items Information job requires Repository Manager, Repository Administrator or Physical Inventory Operator (including Limited with institution-wide scope). Set management may require additional privileges. Configuration: General System Administrator. Minimum end-to-end roles remain untested."
-      }
-   ]
+  "id": "skopeant/odpisy",
+  "title": [
+    {
+      "lang": "cs",
+      "text": "Odpisy / Weeding"
+    },
+    {
+      "lang": "en",
+      "text": "Odpisy / Weeding"
+    }
+  ],
+  "subtitle": [
+    {
+      "lang": "cs",
+      "text": "Řízený odpis fyzických jednotek"
+    },
+    {
+      "lang": "en",
+      "text": "Controlled physical item weeding workflow"
+    }
+  ],
+  "author": "Antonín Skopec",
+  "license": "https://github.com/skopeant/odpisy/blob/main/LICENSE",
+  "icon": {
+    "type": "url",
+    "value": "/assets/odpisy.png"
+  },
+  "pages": {
+    "config": "/#/config",
+    "help": "https://skopec.vosis.cz/alma/cloudapp/odpisy/"
+  },
+  "contentSecurity": {
+    "sandbox": {
+      "downloads": true,
+      "popups": true,
+      "popups-to-escape-sandbox": true
+    },
+    "connectSrc": [
+      "https://api.exldevnetwork.net"
+    ]
+  },
+  "description": [
+    {
+      "lang": "cs",
+      "text": "Řízené úbytkování fyzických jednotek: číslo a datum, odepsání, přesun; historie, tisk a CSV. Job Change Physical Items Information vyžaduje roli Repository Manager, Repository Administrator nebo Physical Inventory Operator (včetně Limited s institucionálním rozsahem). K práci se sety mohou být potřebná další oprávnění. Konfigurace: General System Administrator. Minimální kombinace rolí ještě nebyla testována."
+    },
+    {
+      "lang": "en",
+      "text": "Controlled physical item weeding: number/date, work-order change and relocation; history, print and CSV. Change Physical Items Information job requires Repository Manager, Repository Administrator or Physical Inventory Operator (including Limited with institution-wide scope). Set management may require additional privileges. Configuration: General System Administrator. Minimum end-to-end roles remain untested."
+    }
+  ]
 }
