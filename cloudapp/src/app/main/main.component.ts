@@ -25,6 +25,7 @@ export class MainComponent implements OnDestroy {
   configSequence=''; configScanMode:'circ_desk'|'department'='circ_desk'; configScanCode=''; configWoDepartmentId=''; doneMethod:'scan'|'m18'='m18';
   settingsReady=false; environment='unverified'; environmentError=''; allowWrites=false; importWarning=''; importReviewed=false;
   operationDate=this.localDate(); operation:OperationState|null=null; workflowBusy=false;
+  recoveryConfirmation=''; abandonedOperations:{operation:OperationState;closedAt:string;reason:string}[]=[];
   flowLibrary=''; flowLocation=''; flowLocations:Choice[]=[]; flowItems:ReportItem[]=[];
   flowInvalid=0; flowSkipped=0; flowLoaded=false; flowProgress='';
   scanAttempts:{[pid:string]:string}={}; historicalSets:{id:string;name:string}[]=[];historicalItems:ReportItem[]=[];
@@ -124,6 +125,29 @@ export class MainComponent implements OnDestroy {
     return this.sourceMetadataFromSetName(String(detail?.name||''));
   }
   get pendingOperation():boolean{return !!this.operation && this.operation.stage!=='complete';}
+  /** Only a POST with no recorded job instance may be manually closed after independent verification. */
+  get canCloseUncertainOperation():boolean {
+    return !!this.operation && this.operation.stage==='post_maybe_sent' && !this.operation.instanceId
+      && this.settingsReady && !this.workflowBusy;
+  }
+  async closeUncertainOperation():Promise<void>{
+    const op=this.operation;
+    if(!op || !this.canCloseUncertainOperation || this.recoveryConfirmation.trim()!==op.setName)return;
+    this.workflowBusy=true;this.error='';this.message='';
+    const previousArchive=this.abandonedOperations;
+    try{
+      // This does not create, retry, cancel or delete any Alma job or set.
+      // The user must verify the exact job in Monitor Jobs independently.
+      this.abandonedOperations=[...previousArchive,{operation:{...op},closedAt:new Date().toISOString(),reason:'user_confirmed_no_job_in_monitor_jobs'}].slice(-50);
+      this.operation=null;
+      await this.persistWorkflow();
+      this.recoveryConfirmation='';this.stopJobPolling();
+      this.message='Nedokončený pokus byl ukončen pouze v aplikaci. Diagnostický záznam byl zachován. V Almě nebylo nic změněno.';
+    }catch(e:any){
+      this.operation=op;this.abandonedOperations=previousArchive;
+      this.error='Ukončení pokusu se nepodařilo uložit: '+String(e?.message||e);
+    }finally{this.workflowBusy=false;}
+  }
   get operationPanelClass():string{
     const op=this.operation;
     if(!op)return '';
@@ -207,7 +231,8 @@ export class MainComponent implements OnDestroy {
       this.parseWithdrawalMappings();
       if(Array.isArray(c?.librarySettings)) this.mappingEntries=this.parseLibrarySettings(c.librarySettings);
       try { const st:any=await firstValueFrom(this.settings.get());
-        this.operation=st?.operation||null;this.scanAttempts=st?.scanAttempts||{};this.settingsReady=true;
+        this.operation=st?.operation||null;this.scanAttempts=st?.scanAttempts||{};
+        this.abandonedOperations=Array.isArray(st?.abandonedOperations)?st.abandonedOperations:[];this.settingsReady=true;
       } catch(e:any) { this.error='Nepodařilo se načíst bezpečnostní stav operací: '+String(e?.message||e); }
       try {
         const general:any=await firstValueFrom(this.rest.call<any>('/almaws/v1/conf/general?format=json'));
@@ -699,7 +724,7 @@ export class MainComponent implements OnDestroy {
       enumeration:[d?.enumeration_a,d?.enumeration_b,d?.chronology_i].filter(Boolean).join(' / ')};
   }
   private async persistWorkflow():Promise<void>{
-    await firstValueFrom(this.settings.set({operation:this.operation,scanAttempts:this.scanAttempts}));
+    await firstValueFrom(this.settings.set({operation:this.operation,scanAttempts:this.scanAttempts,abandonedOperations:this.abandonedOperations}));
   }
   private assertWritable():void {
     if(!this.canWrite)throw new Error('Zápis je vypnutý. Ověřte prostředí a povolte zápisy v nastavení.');

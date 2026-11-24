@@ -199,6 +199,16 @@
     <button type="button" *ngIf="jobPollingEnabled" (click)="stopJobPolling()">Zastavit automatické kontroly</button>
     <p *ngIf="jobPollingMessage">{{jobPollingMessage}}</p>
     <button (click)="checkOperation()" [disabled]="workflowBusy||!operation.instanceId">{{'checkJob'|translate}}</button>
+    <div *ngIf="canCloseUncertainOperation" class="recovery-box">
+      <p><strong>Nejistý výsledek spuštění jobu.</strong> Instance ID není známé. Před pokračováním ověřte v Alma Monitor Jobs, že job pro níže uvedenou sadu skutečně nevznikl ani neběží. Pokud to nelze spolehlivě ověřit, pokus neukončujte.</p>
+      <p><strong>Set:</strong> {{operation.setName}}<br><strong>Set ID:</strong> {{operation.setId||'—'}}</p>
+      <label>Po ověření v Monitor Jobs opište celý název setu jako potvrzení:
+        <input type="text" [(ngModel)]="recoveryConfirmation" [disabled]="workflowBusy" autocomplete="off" placeholder="Přesný název setu">
+      </label>
+      <button type="button" (click)="closeUncertainOperation()" [disabled]="workflowBusy||recoveryConfirmation.trim()!==operation.setName">Ukončit neúspěšný pokus (bez opakování jobu)</button>
+      <p class="notice">Tento krok pouze uvolní uložený stav aplikace a zachová diagnostický záznam. Neodstraní set, nezmění jednotky ani nespustí žádný job.</p>
+    </div>
+
     <p *ngIf="operation.error" class="error">{{operation.error}}</p>
   </fieldset>
   <fieldset class="workflow-panel" *ngIf="tab==='history'">

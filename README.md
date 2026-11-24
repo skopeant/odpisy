@@ -2,6 +2,8 @@
 
 [Česky](README.cs.md) | **English**
 
+**Current release: 1.0.1 (24 November 2026).**
+
 An Ex Libris Alma Cloud App for controlled physical item withdrawal in three phases. It supports multiple libraries with independent location and sequence configurations, fixed itemized sets, audit metadata, job monitoring, printing and CSV export.
 
 ## Workflow
@@ -13,6 +15,12 @@ An Ex Libris Alma Cloud App for controlled physical item withdrawal in three pha
 
 Membership and relevant item data are verified before and after writes. The app **does not automatically repeat** uncertain job submissions. The job monitor uses red/green backgrounds for failed/successful outcomes.
 
+## What's new in 1.0.1
+
+- **Withdrawal list printout:** the weeding number appears in larger type on the left without a label; the accession/inventory number is smaller on the right with the Czech label “Přírůstkové číslo”.
+- **Recovery from an uncertain job submission:** when a saved `post_maybe_sent` operation has no instance ID, the user may close that app-only state **only after independently verifying in Alma Monitor Jobs that the job was neither created nor running**, and entering the exact set name. A diagnostic record is retained. No job is retried, and no set or item is modified.
+- **Limitation:** the underlying authorization error has not yet been explained. Release 1.0.1 addresses the resulting blocked workflow, not the cause of the rejected API request.
+
 ## Permissions
 
 Cloud App REST calls use the logged-in Alma user's privileges. A personal Alma API key is **not** embedded.
@@ -21,7 +29,7 @@ Cloud App REST calls use the logged-in Alma user's privileges. A personal Alma A
 - **Alma Change Physical Items Information job:** Alma lists `Repository Manager`, `Repository Administrator`, `Physical Inventory Operator` and `Physical Inventory Operator - Limited` with institution-level scope. This is **not a verified minimum for the entire app**; creating, reading and updating sets may impose additional permission requirements.
 - **Optional acquisition-method enrichment:** PO Line lookups may require acquisition permissions, and are **disabled by default** to reduce API requests.
 
-The minimum staff role combination is awaiting testing with a less-privileged account. The maintainer's existing roles do not need to be changed.
+The minimum staff-role combination is not conclusively established. Both successful and unsuccessful user tests have been observed in PSB.
 
 ## Configuration and operation
 
@@ -35,12 +43,12 @@ eca start
 eca build
 ```
 
-The maintainer reported successful `eca build` and `eca start` of RC3. The final documentation and manifest have since changed; run `eca build` on this release content before publishing.
+An earlier RC3 was successfully built and started by the maintainer. Version 1.0.1 requires its own build and functional verification in PSB.
 
 ## Publishing and support
 
-See [release instructions](RELEASE-1.0.0.md) and [Ex Libris listing text](APP-CENTER-DESCRIPTION.md). Previous test notes are in [`docs/development-history/`](docs/development-history/).
+See [1.0.1 release and test checklist](RELEASE-1.0.1.md) and [changelog](CHANGELOG.md).
 
-Support/issues (planned repository location): https://github.com/skopeant/odpisy/issues
+Support/issues: https://github.com/skopeant/odpisy/issues
 
 MIT License.

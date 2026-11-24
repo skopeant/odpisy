@@ -168,12 +168,12 @@ export function createWithdrawalPrintHtml(items: ReportItem[], info: ReportMetad
   const last=ordered[ordered.length-1]?.weedingNumber||ordered[ordered.length-1]?.inventoryNumber||'';
   const entries=ordered.map(item=>`<article class="entry">
 <div class="entry-left">
-  <div class="entry-heading"><strong>${display(item.inventoryNumber)}</strong><span>${display(info.locationName)}</span></div>
+  <div class="entry-heading"><strong>${display(item.weedingNumber)}</strong><span>${display(info.locationName)}</span></div>
   <div class="bibliography">${display(item.title)}${item.author?` / ${display(item.author)}`:''}${item.publisher?` – ${display(item.publisher)}`:''}${item.publicationDate||item.publicationYear?` (${display(item.publicationDate||item.publicationYear)})`:''}${item.isbn?` – ISBN ${display(item.isbn)}`:''}</div>
   <div class="item-line"><b>Čárový kód:</b> ${display(item.barcode)}${item.callNumber?` &nbsp; <b>Signatura:</b> ${display(item.callNumber)}`:''}${item.enumeration?` &nbsp; <b>Svazek:</b> ${display(item.enumeration)}`:''}</div>
 </div>
 <div class="entry-right">
-  <div><b>Úbytkové číslo:</b> ${display(item.weedingNumber)}</div>
+  <div><b>Přírůstkové číslo:</b> ${display(item.inventoryNumber)}</div>
   <div><b>Datum odpisu:</b> ${shortDate(item.weedingDate)}</div>
   <div><b>Důvod odpisu:</b> ${display(item.reason)}</div>
   <div><b>MMS ID:</b> ${display(item.mmsId)}</div>
@@ -196,7 +196,7 @@ h1{font-size:18pt;margin:0 0 1.5mm;line-height:1.1}
 .meta{font-size:8pt;margin:2.5mm 0 4mm;line-height:1.45}
 .entry{display:grid;grid-template-columns:minmax(0,65%) minmax(0,35%);column-gap:6mm;border-bottom:1px solid #aaa;padding:3mm 0;break-inside:avoid;page-break-inside:avoid}
 .entry-left,.entry-right{min-width:0}
-.entry-heading{display:flex;gap:4mm;align-items:baseline;justify-content:space-between;font-size:9pt;margin-bottom:1mm}
+.entry-heading{display:flex;gap:4mm;align-items:baseline;justify-content:space-between;font-size:13pt;margin-bottom:1mm;overflow-wrap:anywhere}
 .entry-heading span{font-size:7.3pt;text-align:right;font-weight:600}
 .bibliography{line-height:1.35;overflow-wrap:break-word}
 .item-line{font-size:8pt;margin-top:1.7mm;line-height:1.35;overflow-wrap:break-word}

@@ -42,7 +42,7 @@ label input[type=checkbox]{width:18px;height:18px;flex-shrink:0}
 .workflow-panel-pending{background:#fff}
 
 
-/* 1.0.0: prevent native selects and long names from expanding the Alma sidebar.
+/* Prevent native selects and long names from expanding the Alma sidebar.
    Apply the same responsive rules to the main workflow and configuration screen. */
 :host, .app-shell {min-width:0;max-width:100%;box-sizing:border-box}
 .app-shell *, .app-shell *::before, .app-shell *::after {box-sizing:border-box}
@@ -105,3 +105,6 @@ label input[type=checkbox]{width:18px;height:18px;flex-shrink:0}
   .app-shell nav.workflow-tabs button {min-height:48px;padding:7px 8px;gap:1px}
   .app-shell nav.workflow-tabs .tab-label {font-size:.92em}
 }
+
+.recovery-box{border:1px solid #a45d32;background:#fff9f2;padding:12px;margin:12px 0;border-radius:5px}
+.recovery-box input{width:100%;max-width:100%;box-sizing:border-box}

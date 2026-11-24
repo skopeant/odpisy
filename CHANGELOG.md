@@ -1,3 +1,10 @@
+## 1.0.1 (2026-11-24)
+
+- Tisk Úbytkového seznamu: úbytkové číslo výrazně vlevo bez popisku; přírůstkové číslo vpravo menším písmem s popiskem „Přírůstkové číslo“. CSV a kontrolní tisk beze změny.
+- Při `post_maybe_sent` bez instance jobu lze po ručním ověření v Monitor Jobs a opsání přesného názvu setu ukončit pouze uložený stav aplikace.
+- Uvolněný pokus se zaznamená do uživatelské diagnostiky `abandonedOperations` (max. 50), bez opakování API POST a bez změny setů či jednotek.
+- Původní autorizační chyba Jobs API dosud není vysvětlena; tato verze opravuje následné zaseknutí uživatelského workflow. Ověřit v PSB.
+
 ## 1.0.0 RC4 (2026-11-19)
 
 - Opraveny CZ/EN úvodní texty záložky Odepsání: pouze hromadný job, ne Scan-in.
